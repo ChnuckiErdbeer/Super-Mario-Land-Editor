@@ -29,7 +29,7 @@ namespace SMLEdit
 
         public RomHeader romHeader = new RomHeader();
         public Level[] levels = new Level[32];
-        public int lvlInFocus = 0;
+        public int lvlInFocus = 26;
 
 
         //Functions:
@@ -95,7 +95,7 @@ namespace SMLEdit
                     int readBytes = 0;                              //Number of bytes read.
 
 
-                    // Byte-step throuh the romfile and copy each byte to the byte-array "rom".
+                    // Byte-step through the romfile and copy each byte to the byte-array "rom".
 
                     while (spareBytes > 0)
                     {
@@ -106,6 +106,7 @@ namespace SMLEdit
 
                         readBytes += n;
                         spareBytes -= n;
+                        
                     }
                     
 
@@ -162,38 +163,71 @@ namespace SMLEdit
                     }
                 }
 
-                MessageBox.Show("TEST");
+                MessageBox.Show("SPIELWIESE:");
+
+                /// Spielwiese >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+                
                 Bitmap citrus = new Bitmap("d:\\citrus.bmp");
                 Point pnt = new Point(100, 100);
-                Size tile_on_screen_size = new Size(16,16);
-
-                int [] levelList = new int[27];
-                for (int i = 0; i < 27; i++) levelList[i] = i+1;
-
-                comboBox1.DataSource = levelList;
-
-                
-
-                //int testmann = comboBox1;
+                Size tile_on_screen_size = new Size(17,17);
+                Size screen_on_screen_size = new Size(340, 272);
 
 
-                for (int i = 0; i < 384; i++)
+
+
+
+
+                // ENDE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+                MessageBox.Show("ENDE SPIELWIESE");
+                // ENDE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
+                PictureBox[] tilepal = new PictureBox[256];
+
+                for (ushort i = 0; i < 256; i++)
                 {
                     System.Windows.Forms.PictureBox testbox = new System.Windows.Forms.PictureBox();
 
                     testbox.Size = tile_on_screen_size;
                     testbox.Margin = new Padding (1);
                     testbox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-                    testbox.Image = ResizeBitmap(levels[lvlInFocus].tilePal.getTile(i), 16, 16);
+                    testbox.BackgroundImage = levels[lvlInFocus].tilePal.getTile(i);
 
-                    flowLayoutPanel1.Controls.Add(testbox);
+                    tilepal[i] = testbox;
+                    
                 }
+                TilePaletteDisplay.Controls.AddRange(tilepal);                                                //
 
+
+
+                int numOfScreens = 32;
                 
 
+                PictureBox[] levelLayout = new PictureBox[numOfScreens];
+
+                levels[lvlInFocus].tileMatrix.update_all_screens(levels[lvlInFocus].tilePal);
+
+                for (int i = 0; i < numOfScreens; i++)                                                  //Put each screen into a single picture box.
+                {
+                    System.Windows.Forms.PictureBox tmpPicBox = new System.Windows.Forms.PictureBox();  //Create temporary picture box.
+
+                    tmpPicBox.Size = screen_on_screen_size;                                               //Configure the picture box.
+                    tmpPicBox.Margin = new Padding(1);
 
 
+                    Bitmap tmpScreen = levels[lvlInFocus].tileMatrix.screens[i];
 
+                    tmpPicBox.BackgroundImage = tmpScreen;
+
+                    levelLayout[i] = tmpPicBox;
+                  
+                    
+                    
+                }
+               
+                LevelDisplay.Controls.AddRange(levelLayout);
+        
+
+                
 
            
 
@@ -229,7 +263,41 @@ namespace SMLEdit
 
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
+            
+        }
+
+        private void TileMatrix_Paint(object sender, PaintEventArgs e)
+        {              
+            
+        }
+
+        private void testpanel_Paint(object sender, PaintEventArgs e)
+        {
 
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Bitmap citrus = new Bitmap("d:\\citrus.bmp");
+            Size tile_on_screen_size = new Size(16, 16);
+
+ 
+            System.Windows.Forms.PictureBox testbox = new System.Windows.Forms.PictureBox();
+
+            testbox.Size = tile_on_screen_size;
+            testbox.Margin = new Padding(1);
+            testbox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            testbox.Image = ResizeBitmap(citrus, 16, 16);
+
+
+            TilePaletteDisplay.Controls[41].BackgroundImage = citrus;
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+   
     }
 }

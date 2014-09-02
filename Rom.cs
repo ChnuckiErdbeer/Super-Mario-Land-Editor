@@ -677,6 +677,8 @@ namespace SMLEdit
         /// <summary>
         /// Sets the screenOrderList to the corresponding values taken from a byte array containing 
         /// a whole patched SML-ROM.
+        /// 
+        /// The screenOrderList is little endian but will be communicated as big endian.
         /// </summary>
         /// <param name="rom">This byte array should contain a patched SML-ROM.</param>
         /// <param name="level">The number of the level to obtain the screenOrder from.</param>
@@ -690,12 +692,14 @@ namespace SMLEdit
             for (int curScr = 0; curScr < 32; curScr++)
             {
 
-                currentScreen = rom[(level + 5) * 0x4100 + 0x4C0 + (curScr * 2) + 0];
+                currentScreen = rom[(level + 5) * 0x4000 + 0x100 + (curScr * 2) + 0];
 
-                if (currentScreen == 0xFF) break;
+                
 
                 currentScreen = (ushort)(currentScreen << 8);
-                currentScreen += rom[(level + 5) * 0x4100 + 0x4C0 + (curScr * 2) + 1];
+                currentScreen += rom[(level + 5) * 0x4000 + 0x100 + (curScr * 2) + 1];
+
+                if (currentScreen == 0xFF00) break;
 
                 screenOrder.Add(currentScreen);
             }
@@ -705,10 +709,29 @@ namespace SMLEdit
 
 
         /// <summary>
+        /// Sets a specific entry of the screenOrderList to a new adress value.
+        /// </summary>
+        /// <param name="entry">The screenorderList entry to set.</param>
+        /// <param name="address">The value to set the entry to. (Takes a big endian value and writes it as little endian.)</param>
+        public void set_screenOrderList_Entry(int entry, ushort address)
+        {
+            //Switch the bytes:
+
+            ushort tmp = (ushort)(address & 0x00FF);                        //Set tmp to lower byte of adress.
+            tmp = (ushort)(tmp << 8);                                       //Shift the lower byte of tmp to the upper byte.
+            address = (ushort)(address & 0xFF00);                           //Reset the lower byte of address.
+            address = (ushort)(address >> 8);                               //Shift the upper byte of adress to the lower byte.
+            address += tmp;                                                 //Add tmp to address.
+
+            //Set the screenorderList entry:
+            screenOrderList[entry] = address;                               
+        }
+
+        /// <summary>
         /// Returns the adress to the data of one screenOrderList-entry.
         /// </summary>
         /// <param name="screennr">The the number of the screen in screenOrderList.</param>
-        /// <returns>The requested value if screennr exists or 0 if not.</returns>
+        /// <returns>The requested value if screennr exists or 0 if not. Value is retrieved as little endian but returned as big endian.</returns>
         /// 
         public ushort get_screenOrderListEntry(int screennr)
         {
@@ -717,7 +740,13 @@ namespace SMLEdit
                 MessageBox.Show("ERROR! Tryed to get data for non defined ScreenOrderList-entry.");
                 return (0);
             }
-            return this.screenOrderList[screennr];
+            ushort address = screenOrderList[screennr];
+            ushort tmp = (ushort)(address & 0x00FF);                        //Set tmp to lower byte of adress.
+            tmp = (ushort)(tmp << 8);                                       //Shift the lower byte of tmp to the upper byte.
+            address = (ushort)(address & 0xFF00);                           //Reset the lower byte of address.
+            address = (ushort)(address >> 8);                               //Shift the upper byte of adress to the lower byte.
+            address += tmp;
+            return address;
         }
 
 
@@ -972,6 +1001,7 @@ namespace SMLEdit
         }      
         
         
+
         /// <summary>
         /// This object contains a map of all background tiles for the whole level.
         /// </summary>
@@ -986,59 +1016,82 @@ namespace SMLEdit
         public void set_tileMatrix(byte[] rom, int level)
         {
 
-            this.tileMatrix.initialize();
+            
 
 
-            int cur_row = 0;
-
-            int byteCounter = 0;
 
 
-            byte cur_sdb = rom[(level + 5) * 0x4000 + 0x5000];                      //Current screen-data-byte = first byte of screenData.
-
-
-            while (cur_sdb != 0xFF)                                                 //A 0xFF-byte signalizes the end of the list.
+            //Step through the screenorder list:
+            for (int cur_screen = 0; cur_screen < screenOrderList.Length; cur_screen++)
             {
-                if (cur_sdb == 0xFE)                                                //0xFE marks the end of data for the current row.
-                {
-                    cur_row++;
-                }
-                else
-                {
-                    int rowPos = (cur_sdb & 0xF0) >> 4;                             //Position of the first tile to set.
-                    int numOfTiles = (cur_sdb & 0x0F);                              //number of tiles to set from "rowPos".
 
-                    if (cur_sdb == 0)                                               //If data byte is 00 it means no tile is empty.
+                ushort cur_sle = get_screenOrderListEntry(cur_screen);                 //Set current screenorder list entry.
+
+                int byteCounter = 0;
+                byte   cur_sdb = rom[(level + 5) * 0x4000 + cur_sle - 0x4000 + byteCounter];
+
+                
+                
+                //Step through columns:
+
+                int cur_col = 0;
+
+                while (cur_col < 20)   
+                {
+
+                    
+                    
+
+                    if (cur_sdb == 0xFE)                                                        //0xFE marks the end of data for the current row.
                     {
-                        numOfTiles = 16;
+                        cur_col++;
                     }
-
-                    bool isFD = false;                                              //The tile-id 0xFD is abused as an compression indicator. If a tile with the value 0xFD is encountered, all subsequent tiles in the series will be drawn as the tile following the 0xFD.
-
-                    for (int i = rowPos; i < (rowPos + numOfTiles); i++)            //Read the next "numOfTiles" bytes and put them into the screendata from "rowPos" on.
+                    else
                     {
+                        
+                        int colPos = (cur_sdb & 0xF0) >> 4;                                     //Position of the first tile to set.
+                        int numOfTiles = (cur_sdb & 0x0F);                                      //number of tiles to set from "rowPos".
 
-                        if (!isFD)                                                  //Should be the case most of the time.
+                        if (cur_sdb == 0)                                                       //If data byte is 00 it means no tile is empty.
                         {
-                            byteCounter++;
-                            cur_sdb = rom[(level + 5) * 0x4000 + 0x5000 + byteCounter];      //load the next tile.
-
-                            if (cur_sdb == 0xFD)                                    //If the tile is 0xFD...
-                            {
-                                byteCounter++;
-                                cur_sdb = rom[(level + 5) * 0x4000 + 0x5000 + byteCounter];  //... load the next tile...
-                                isFD = true;                                        //... and stop loading new tiles for this series.
-                            }
+                            numOfTiles = 16;
                         }
 
+                        bool isFD = false;                                                      //The tile-id 0xFD is abused as an compression indicator. If a tile with the value 0xFD is encountered, all subsequent tiles in the series will be drawn as the tile following the 0xFD.
 
-                        this.tileMatrix.set_tile(cur_row / 20, cur_row % 20, i, cur_sdb);
+                        for (int i = colPos; i < (colPos + numOfTiles); i++)                    //Read the next "numOfTiles" bytes and put them into the screendata from "colPos" on.
+                        {
+
+                            if (!isFD)                                                          //Should be the case most of the time.
+                            {
+                                byteCounter++;
+                                cur_sdb = rom[(level + 5) * 0x4000 + cur_sle - 0x4000 + byteCounter];    //load the next tile.
+
+                                if (cur_sdb == 0xFD)                                            //If the tile is 0xFD...
+                                {
+                                    byteCounter++;
+                                    cur_sdb = rom[(level + 5) * 0x4000 + cur_sle - 0x4000 + byteCounter];//... load the next tile...
+                                    isFD = true;                                                //... and stop loading new tiles for this series.
+                                }
+                            }
+
+
+                            tileMatrix.set_tile(cur_screen, cur_col, i, cur_sdb); 
+                        }
                     }
+
+                    byteCounter++;                                                              //Read the next byte to process.
+                    cur_sdb = rom[(level + 5) * 0x4000 + cur_sle - 0x4000 + byteCounter];
+                 
+
+
                 }
 
-                byteCounter++;                                                  //Read the next byte to process.
-                cur_sdb = rom[(level + 5) * 0x4000 + 0x5000 + byteCounter]; 
-                // if (cur_sdb == 0xFF) MessageBox.Show("FF!!");
+
+
+
+
+
             }
         }
 
@@ -1049,21 +1102,32 @@ namespace SMLEdit
         /// This object contains a array of bitmaps representing the tilepalette for the level.
         /// </summary>
         public TilePalette tilePal = new TilePalette();                            //All tiles of the tilepalette in bitmap format.
+        
 
 
-
-
+        /// <summary>
+        /// Reads the tiles from a level in an passed byte array containing a whole rom.
+        /// 
+        /// Tiles are rearranged to be directly acessible via the values in a tile-matrix.
+        /// First 128 tiles from 0x5000 to 0x57FF are read to tilePal-entries 0x00 to 0x7F.
+        /// Second 128 tiles from 0x4800 to 0x4FFF are read to tilePal-entries 0x80 to 0xFF.
+        /// Third 128 tiles from 0x4000 to 0x47FF are read to tilePal-entries 0x100 to 0x17F.
+        /// The third group of tiles cannot be used in maps and is only read for future advanced
+        /// features like enemy editing and so on.
+        /// </summary>
+        /// <param name="rom"></param>
+        /// <param name="level"></param>
         public void set_TilePalette(byte[] rom, int level)
         {
             int byteCounter = 0;                        //Let's count the bytes.
             int tileCounter;                            //And let's also count tiles this time.
 
-            Bitmap[] tilePal = new Bitmap[384];         //Our tile-palette-storage.
+            Bitmap[] tilePal = new Bitmap[256];         //Our tile-palette-storage.
 
 
-            for (tileCounter = 0; tileCounter < 384; tileCounter++)     //Read tile by tile.
+            for (tileCounter = 0; tileCounter < 128; tileCounter++)      //Read 128 tiles from 0x5000 to 0x57FF.
             {
-                Bitmap cur_tile = new Bitmap(8, 8);                      //Bitmap to be added to tilePal in the end.
+                Bitmap cur_tile = new Bitmap(8,8 );                      //Bitmap to be added to tilePal in the end.
 
 
                 //Eight times read two bytes and decode the pixels from GB-format.
@@ -1071,9 +1135,9 @@ namespace SMLEdit
                 for (int ypos = 0; ypos < 8; ypos++)
                 {
                     
-                    byte a = rom[((level + 0x25) * 0x4000) + byteCounter];  //Read first byte.
+                    byte a = rom[((level + 0x25) * 0x4000) + 0x1000 + byteCounter];  //Read first byte.
                     byteCounter++;
-                    byte b = rom[(level + 0x25) * 0x4000 + byteCounter];  //Read second byte.
+                    byte b = rom[(level + 0x25) * 0x4000 + 0x1000 + byteCounter];  //Read second byte.
                     byteCounter++;
 
                     //Decode pixel by pixel:
@@ -1082,21 +1146,84 @@ namespace SMLEdit
 
                     for (int xpos = 0; xpos < 8; xpos++)
                     {
+                        pixel = ((a & 0x80) >> 6);                  //Set pixel's bit 1 to a's bit 7.
+                        pixel += ((b & 0x80) >> 7);                 //Set pixel's bit 0 to b's bit 7. 
+
+                        a = (byte)(a << 1);                         //Lefthift both bytes once to focus on the next bit.
+                        b = (byte)(b << 1);
+
+                        //KKKcur_tile.SetPixel(xpos,ypos,
+                        this.tilePal.setPixel(tileCounter, xpos, ypos, pixel);
+                    }
+                }
+            }
+
+            for (tileCounter = 128; tileCounter < 256; tileCounter++)    //Read 128 tiles from 0x4800 to 0x4FFF
+            {
+                Bitmap cur_tile = new Bitmap(8, 8);                      //Bitmap to be added to tilePal in the end.
 
 
+                //Eight times read two bytes and decode the pixels from GB-format.
 
+                for (int ypos = 0; ypos < 8; ypos++)
+                {
 
-                        pixel = ((a & 0x80) >> 6);            //Set pixel's bit 1 to a's bit 7.
-                        pixel += ((b & 0x80) >> 7);            //Set pixel's bit 0 to b's bit 7. 
+                    byte a = rom[((level + 0x25) * 0x4000) + 0x000 + byteCounter];  //Read first byte.
+                    byteCounter++;
+                    byte b = rom[(level + 0x25) * 0x4000 + 0x000 + byteCounter];  //Read second byte.
+                    byteCounter++;
+
+                    //Decode pixel by pixel:
+
+                    int pixel;
+
+                    for (int xpos = 0; xpos < 8; xpos++)
+                    {
+                        pixel = ((a & 0x80) >> 6);                  //Set pixel's bit 1 to a's bit 7.
+                        pixel += ((b & 0x80) >> 7);                 //Set pixel's bit 0 to b's bit 7. 
 
                         a = (byte)(a << 1);                         //Lefthift both bytes once to focus on the next bit.
                         b = (byte)(b << 1);
 
                         this.tilePal.setPixel(tileCounter, xpos, ypos, pixel);
-
                     }
                 }
             }
+
+
+            for (tileCounter = 256; tileCounter < 384; tileCounter++)    //Read 128 tiles from 0x4000 to 0x47FF.
+            {
+                Bitmap cur_tile = new Bitmap(8, 8);                      //Bitmap to be added to tilePal in the end.
+
+
+                //Eight times read two bytes and decode the pixels from GB-format.
+
+                for (int ypos = 0; ypos < 8; ypos++)
+                {
+
+                    byte a = rom[((level + 0x25) * 0x4000) + 0x000 + byteCounter];  //Read first byte.
+                    byteCounter++;
+                    byte b = rom[(level + 0x25) * 0x4000 + 0x000 + byteCounter];  //Read second byte.
+                    byteCounter++;
+
+                    //Decode pixel by pixel:
+
+                    int pixel;
+
+                    for (int xpos = 0; xpos < 8; xpos++)
+                    {
+                        pixel = ((a & 0x80) >> 6);                  //Set pixel's bit 1 to a's bit 7.
+                        pixel += ((b & 0x80) >> 7);                 //Set pixel's bit 0 to b's bit 7. 
+
+                        a = (byte)(a << 1);                         //Lefthift both bytes once to focus on the next bit.
+                        b = (byte)(b << 1);
+
+                        this.tilePal.setPixel(tileCounter, xpos, ypos, pixel);
+                    }
+                }
+            }
+
+            
         }
 
 
@@ -1106,8 +1233,7 @@ namespace SMLEdit
 
 
     /// <summary>
-    /// The Screendata is basically an array containing all tiles of a whole level plus methods
-    /// to change this tiles. 
+    /// The Screendata is a set of tools to retrieve the level-screens from the ROM and present them in the editor.
     /// 
     public class Screendata
     {
@@ -1117,36 +1243,78 @@ namespace SMLEdit
         /// The tiles are represented as byte values corresponding to the indexes of a tileMap class.
         /// </summary>
         /// 
-        public Screendata() { }
+        public Screendata() 
+        { 
+         
+        // Set all tiles in tileMatrix to 0x2C (blank tile).
+       
+       
+        for (int i = 0; i < 32; i++)
+        {
+            for (int j = 0; j < 20; j++)
+            {
+                for (int k = 0; k < 16; k++)
+                {
+                    tileMatrix[i, j, k] = 0x2C;
+                }
+            }
+         }
+     
+
+        for (int i = 0; i < 32; i++)
+        {
+            Bitmap tempScreen = new Bitmap(340,272);        // 20 * 17, 16 * 17 (17 because I want to have a one pixel grid between the tiles.)
+            this.screens[i] = tempScreen;
+        }
+        }
 
 
         /// <summary>
-        /// A 32 x 20 x 17 byte-array used to contain all tiles used in a level. 
+        /// A 32 x 20 x 17 ushort-array used to contain all tiles used in a level. 
         /// The dimensions are used in the following way:
         /// 
         ///     32 screens with 20 horizontal and 16 vertical tiles.
         ///     
         /// </summary>
         /// 
-        private byte[, ,] tileMatrix = new byte[32, 20, 16];
+        private ushort[, ,] tileMatrix = new ushort[32, 20, 16];
+
+        /// <summary>
+        /// Public Bitmaps containing all 32 screens of the level.
+        /// </summary>
+        public Bitmap[] screens = new Bitmap[32];
 
 
         /// <summary>
-        /// Sets all tiles in tileMatrix to 0x2C (blank tile).
+        /// Updates a single screen for level display from the corresponding screenMatrix.
         /// </summary>
-        public void initialize()                            
+        /// <param name="screenNr">The number of the screen to update.</param>
+        /// <param name="pal">A tile palette to retrieve the graphics from.</param>
+        public void update_screen(int screenNr, TilePalette pal)
         {
-            for (int i = 0; i < 32; i++)
+            Graphics g = Graphics.FromImage(screens[screenNr]);                         //Get graphics-object for requested screen.
+           
+            for (int i = 0; i < 20; i++)
             {
-                for (int j = 0; j < 20; j++)
+                for (int j = 0; j < 16; j++)
                 {
-                    for (int k = 0; k < 16; k++)
-                    {
-                        tileMatrix[i, j, k] = 0x2C;
-                    }
+                    ushort cur_tile = tileMatrix[screenNr, i, j];
+                    Bitmap tmpTile = pal.getTile(cur_tile);
+
+                    g.DrawImage(tmpTile, new System.Drawing.Rectangle(i * 17, j * 17, 16, 16));
                 }
             }
         }
+
+        public void update_all_screens(TilePalette pal)
+        {
+            for (int i = 0; i < screens.Length; i++)
+            {
+                update_screen(i, pal);
+            }
+        }
+
+
 
         /// <summary>
         /// Fills all tiles of screen "screenNr" with tile "tileNr".
@@ -1180,7 +1348,7 @@ namespace SMLEdit
         /// <param name="ypos">The vertical position inside the screen of the tile to set.</param>
         /// <param name="tile">A byte value referencing an entry of the tile palette indicating the graphics to set the tile to.</param>
         /// <returns></returns>
-        public bool set_tile(int screen, int xpos, int ypos, byte tile)    
+        public bool set_tile(int screen, int xpos, int ypos, ushort tile)    
         {
             if ((screen > 31) || (xpos > 19) || (ypos > 15))
             {
@@ -1191,7 +1359,7 @@ namespace SMLEdit
             tileMatrix[screen, xpos, ypos] = tile;
             return true;
         }
-
+        
         /// <summary>
         /// Returns the tile-palette index of a specific tile in the tile matrix.
         /// </summary>
@@ -1199,7 +1367,7 @@ namespace SMLEdit
         /// <param name="xpos">Horizontal position of the tile inside the sceen.</param>
         /// <param name="ypos">Vertical position of the tile inside the sceen.</param>
         /// <returns></returns>
-        public byte get_tile(int screen, int xpos, int ypos)                
+        public ushort get_tile(int screen, int xpos, int ypos)                
         {
             if ((screen > 31) || (xpos > 19) || (ypos > 15))
             {
@@ -1208,11 +1376,41 @@ namespace SMLEdit
             }
             else return tileMatrix[screen, xpos, ypos];
         }
+
+        /// <summary>
+        /// Returns the tile-palette index of a specific tile in the tile matrix.
+        /// </summary>
+        /// <param name="ypos">The number of the tile in the tile matrix</param>
+        public ushort get_tile(int number)
+        {
+            int screen = number / (20 * 16);
+            int xpos = (number % (20 * 16)) / 16;
+            int ypos = (number % (20 * 16)) % 16;
+            if ((screen > 31) || (xpos > 19) || (ypos > 15))
+            {
+                MessageBox.Show("Warning! Tried to get tile from a non-defined location. Will return 0x2c (blanc tile) instead.");
+                return 0x2c;
+            }
+
+            else return tileMatrix[screen, xpos, ypos];
+            
+        }
+
+        /// <summary>
+        /// Returns the number of tiles in the level.
+        /// </summary>
+        /// <returns>The number of tiles in the level.</returns>
+        public int get_numberOfTiles()
+        {
+            return tileMatrix.Length;
+        }
 }
 
 
+   
+
     /// <summary>
-    /// Basically an array of 384 8x8 pixel bitmaps representing all entries of the roms tile palette.
+    /// Basically an array of 256 8x8 pixel bitmaps representing all entries of the roms tile palette.
     /// </summary>
     public class TilePalette
     {
@@ -1224,7 +1422,7 @@ namespace SMLEdit
             List<Bitmap> bmpList = new List<Bitmap>();
             for (int i = 0; i < numOfTiles; i++)
             {
-                Bitmap tmpbmp = new Bitmap(8, 8);
+                Bitmap tmpbmp = new Bitmap(16, 16);
                 bmpList.Add(tmpbmp);
             }
 
@@ -1233,8 +1431,33 @@ namespace SMLEdit
 
         }
 
+
         /// <summary>
-        /// Sets a single pixel of a tile in the tile palette.
+        /// Converts a color in the format used by SML to a C#-Color variable.
+        /// Colors are interpreted as four shades of green.
+        /// </summary>
+        /// <param name="smlColor">Color value as represented in SML-ROM. Can't be bigger than 3.</param>
+        /// <returns>The according greenshade if valid or red if not.</returns>
+        private Color colorCalc(int smlColor)
+        {
+            Color realColor = Color.FromName("Red");    //If one of this red pixels shows something went wrong.
+
+            if (smlColor == 0) realColor = Color.FromName("LemonChiffon");
+            if (smlColor == 1) realColor = Color.FromName("DarkOliveGreen");
+            if (smlColor == 2) realColor = Color.FromName("DarkSeaGreen");
+            if (smlColor == 3) realColor = Color.FromName("Black");
+
+            if (smlColor > 3)
+            {
+                MessageBox.Show("ERROR! Color value has to be between 0 and 3. Color was set to Red.");
+            }
+
+            return realColor;
+        }
+
+        /// <summary>
+        /// Sets a single pixel of a tile in the tile palette. Actually the pixel is four pixels 
+        /// forming a square. 
         /// </summary>
         /// <param name="tile">Number of the tile containing the pixel.</param>
         /// <param name="x">Horizontal position of the pixel.</param>
@@ -1250,20 +1473,13 @@ namespace SMLEdit
         /// <returns>True if the color was valid.</returns>
         public bool setPixel(int tile, int x, int y, int color)
         {
-            Color realColor = Color.FromName("Red");    //If one of this red pixels shows something went wrong.
+            if (colorCalc(color) == Color.FromName("Red")) return false;            //Check whether the color is valid.
 
-            if (color == 0) realColor = Color.FromName("LemonChiffon");
-            if (color == 1) realColor = Color.FromName("DarkOliveGreen");
-            if (color == 2) realColor = Color.FromName("DarkSeaGreen");
-            if (color == 3) realColor = Color.FromName("Black");
+            tilePalette[tile].SetPixel(x * 2 + 0, y * 2 + 0, colorCalc(color));     //Set the (doubled) pixel.
+            tilePalette[tile].SetPixel(x * 2 + 0, y * 2 + 1, colorCalc(color));
+            tilePalette[tile].SetPixel(x * 2 + 1, y * 2 + 0, colorCalc(color));
+            tilePalette[tile].SetPixel(x * 2 + 1, y * 2 + 1, colorCalc(color));
 
-            if (color > 3)
-            {
-                MessageBox.Show("ERROR! Color value has to be between 0 and 3.");
-                return false;
-            }
-
-            tilePalette[tile].SetPixel(x, y, realColor);
             return true;
         }
 
@@ -1272,7 +1488,7 @@ namespace SMLEdit
         /// </summary>
         /// <param name="tile">Number of the tile to return.</param>
         /// <returns>The corresponding tile from the tile palette</returns>
-        public Bitmap getTile(int tile)
+        public Bitmap getTile(ushort tile)
         {
             return tilePalette[tile];
         }

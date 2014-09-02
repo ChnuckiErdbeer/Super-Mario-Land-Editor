@@ -7,3 +7,12 @@ D:\In Arbeit\SML\smleditor\SMLEdit\SMLEdit\bin\Debug\SMLEdit.pdb
 D:\In Arbeit\SML\smleditor\SMLEdit\SMLEdit\obj\Debug\SMLEdit.exe
 D:\In Arbeit\SML\smleditor\SMLEdit\SMLEdit\obj\Debug\SMLEdit.pdb
 D:\In Arbeit\SML\smleditor\SMLEdit\SMLEdit\obj\Debug\SMLEdit.csprojResolveAssemblyReference.cache
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\bin\Debug\SMLEdit.exe.config
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.exe
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.pdb
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.csprojResolveAssemblyReference.cache
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.Form1.resources
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.Properties.Resources.resources
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\obj\Debug\SMLEdit.csproj.GenerateResource.Cache
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\bin\Debug\SMLEdit.exe
+D:\In Arbeit\SML\smleditor\Super-Mario-Land-Editor\bin\Debug\SMLEdit.pdb

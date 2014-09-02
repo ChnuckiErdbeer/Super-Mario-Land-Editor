@@ -28,31 +28,58 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.TilePaletteDisplay = new System.Windows.Forms.FlowLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openSMLROMToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.flowLayoutPanel1.SuspendLayout();
+            this.LevelDisplay = new System.Windows.Forms.FlowLayoutPanel();
+            this.oscar = new System.Windows.Forms.PictureBox();
+            this.TilePaletteDisplay.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.oscar)).BeginInit();
             this.SuspendLayout();
             // 
-            // flowLayoutPanel1
+            // TilePaletteDisplay
             // 
-            this.flowLayoutPanel1.AutoScroll = true;
-            this.flowLayoutPanel1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.flowLayoutPanel1.Controls.Add(this.panel1);
-            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(957, 24);
-            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(4);
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(296, 621);
-            this.flowLayoutPanel1.TabIndex = 2;
-            this.flowLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.flowLayoutPanel1_Paint);
+            this.TilePaletteDisplay.AutoScroll = true;
+            this.TilePaletteDisplay.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.TilePaletteDisplay.Controls.Add(this.panel1);
+            this.TilePaletteDisplay.Dock = System.Windows.Forms.DockStyle.Right;
+            this.TilePaletteDisplay.Location = new System.Drawing.Point(941, 24);
+            this.TilePaletteDisplay.Name = "TilePaletteDisplay";
+            this.TilePaletteDisplay.Padding = new System.Windows.Forms.Padding(4);
+            this.TilePaletteDisplay.Size = new System.Drawing.Size(312, 621);
+            this.TilePaletteDisplay.TabIndex = 2;
+            this.TilePaletteDisplay.Paint += new System.Windows.Forms.PaintEventHandler(this.flowLayoutPanel1_Paint);
+            // 
+            // panel1
+            // 
+            this.panel1.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.panel1.BackColor = System.Drawing.SystemColors.ButtonShadow;
+            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Location = new System.Drawing.Point(12, 12);
+            this.panel1.Margin = new System.Windows.Forms.Padding(8, 8, 8, 16);
+            this.panel1.Name = "panel1";
+            this.panel1.Padding = new System.Windows.Forms.Padding(3);
+            this.panel1.Size = new System.Drawing.Size(272, 147);
+            this.panel1.TabIndex = 4;
+            this.panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.panel1_Paint);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(6, 379);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 5;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // label1
             // 
@@ -83,7 +110,7 @@
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Top;
             this.flowLayoutPanel2.Location = new System.Drawing.Point(0, 24);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
-            this.flowLayoutPanel2.Size = new System.Drawing.Size(957, 29);
+            this.flowLayoutPanel2.Size = new System.Drawing.Size(941, 29);
             this.flowLayoutPanel2.TabIndex = 3;
             // 
             // fileToolStripMenuItem
@@ -111,36 +138,49 @@
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
-            // panel1
+            // LevelDisplay
             // 
-            this.panel1.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.panel1.BackColor = System.Drawing.SystemColors.ButtonShadow;
-            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panel1.Location = new System.Drawing.Point(12, 12);
-            this.panel1.Margin = new System.Windows.Forms.Padding(8, 8, 8, 16);
-            this.panel1.Name = "panel1";
-            this.panel1.Padding = new System.Windows.Forms.Padding(3);
-            this.panel1.Size = new System.Drawing.Size(272, 147);
-            this.panel1.TabIndex = 4;
-            this.panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.panel1_Paint);
+            this.LevelDisplay.AutoScroll = true;
+            this.LevelDisplay.BackColor = System.Drawing.SystemColors.InactiveCaption;
+            this.LevelDisplay.Dock = System.Windows.Forms.DockStyle.Top;
+            this.LevelDisplay.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.LevelDisplay.Location = new System.Drawing.Point(0, 53);
+            this.LevelDisplay.Name = "LevelDisplay";
+            this.LevelDisplay.Size = new System.Drawing.Size(941, 293);
+            this.LevelDisplay.TabIndex = 4;
+            this.LevelDisplay.Paint += new System.Windows.Forms.PaintEventHandler(this.TileMatrix_Paint);
+            // 
+            // oscar
+            // 
+            this.oscar.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.oscar.Location = new System.Drawing.Point(87, 379);
+            this.oscar.Name = "oscar";
+            this.oscar.Size = new System.Drawing.Size(430, 217);
+            this.oscar.TabIndex = 5;
+            this.oscar.TabStop = false;
+            this.oscar.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1253, 645);
+            this.Controls.Add(this.oscar);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.LevelDisplay);
             this.Controls.Add(this.flowLayoutPanel2);
-            this.Controls.Add(this.flowLayoutPanel1);
+            this.Controls.Add(this.TilePaletteDisplay);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
-            this.flowLayoutPanel1.ResumeLayout(false);
+            this.TilePaletteDisplay.ResumeLayout(false);
             this.flowLayoutPanel2.ResumeLayout(false);
             this.flowLayoutPanel2.PerformLayout();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.oscar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -154,8 +194,11 @@
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openSMLROMToolStripMenuItem;
         private System.Windows.Forms.MenuStrip menuStrip1;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.FlowLayoutPanel TilePaletteDisplay;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.FlowLayoutPanel LevelDisplay;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.PictureBox oscar;
     }
 }
 
